@@ -2,6 +2,11 @@
 import React from "react"
 import axios from "axios"
 // import { Link } from "react-router-dom"
+
+import DatePicker from "react-datepicker"
+
+import "react-datepicker/dist/react-datepicker.css"
+
 import { Line } from "react-chartjs-2"
 import { Chart as ChartJS,
     CategoryScale,
@@ -37,15 +42,23 @@ type WeatherData = {
 
 type State = {
     count: number
-    weatherData: WeatherData[]
+    weatherData: WeatherData[],
+    selectedDateStart: Date,
+    selectedDateEnd: Date,
 }
+
+// const Today = new Date()
+const TodayStart = new Date()
+const TodayEnd = new Date()
 
 export default class Weather extends React.Component<NonNullable<unknown>, State, WeatherData> {
     constructor(props: NonNullable<unknown> | Readonly<NonNullable<unknown> | Readonly<State>>) {
         super(props)
         this.state = {
             count: 0,
-            weatherData: []
+            weatherData: [],
+            selectedDateStart: new Date(),
+            selectedDateEnd: new Date(),
         }
     }
     componentDidMount = () => {
@@ -53,11 +66,25 @@ export default class Weather extends React.Component<NonNullable<unknown>, State
     }
     getWeather = () => {
         console.log('==== get weather ====')
+
+        const start = this.state.selectedDateStart
+        const end = this.state.selectedDateEnd
+
+        // 選択開始日付
+        const dateStart = String(start.getFullYear())
+            + ("0" + String(start.getMonth() + 1)).slice(-2)
+            + ("0" + String(start.getDate())).slice(-2)
+
+        // 選択最終日付
+        const dateEnd = String(end.getFullYear())
+            + ("0" + String(end.getMonth() + 1)).slice(-2)
+            + ("0" + String(end.getDate())).slice(-2)
+
         const url = "http://localhost:10101/api/weather/get?"
             + "prefectureId=" + 44
             + "&station=東京"
-            + "&startDate=20231101"
-            + "&endDate=20240216"
+            + "&startDate=" + dateStart
+            + "&endDate=" + dateEnd
 
         axios.get(url)
             .then((response) => {
@@ -148,28 +175,57 @@ export default class Weather extends React.Component<NonNullable<unknown>, State
         return (
             <Line options={options} data={data} />
         )
-
     }
 
     componentWillUnmount = () => {
-        console.log('==== componentWillUnmount ====')
+
+        // 選択日の開始日のセット
+        const date = new Date()
+        date.setFullYear(date.getFullYear() - 1)
+        this.setState({selectedDateStart: date})
     }
 
     dailyWeatherList = () => {
         this.getWeather()
     }
 
-    render () {
+    setDateStart = (date: Date) => {
+        this.setState({
+            selectedDateStart: date
+        })
+    }
 
+    setDateEnd = (date: Date) => {
+        this.setState({
+            selectedDateStart: date
+        })
+    }
+
+    render () {
         return (
             <div>
                 <h2>Weather</h2>
                 <div>count: { this.state.count }</div>
                 <div>
+                    <DatePicker
+                        dateFormat="yyyy/MM/dd"
+                        selected={this.state.selectedDateStart}
+                        onChange={(selectedDateStart) => this.setDateStart(selectedDateStart || TodayStart)}
+                    />
+                    から
+
+                    <DatePicker
+                        dateFormat="yyyy/MM/dd"
+                        selected={this.state.selectedDateEnd}
+                        onChange={(selectedDateEnd) => this.setDateEnd(selectedDateEnd || TodayEnd)}
+                    />
+                    まで
+
                     <button
                         onClick={() => this.dailyWeatherList()}
                     >
                         データ取得
+
                     </button>
                 </div>
                 <div id="graph">
